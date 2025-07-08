@@ -14,7 +14,7 @@ use bevy_ecs::{
     system::{Commands, NonSendMarker, Query, SystemParamItem, SystemState},
     world::FromWorld,
 };
-use bevy_math::{DVec2, UVec2};
+use bevy_math::UVec2;
 use bevy_platform::collections::HashMap;
 use bevy_window::{CursorOptions, RawHandleWrapper, RawHandleWrapperHolder, WindowCreated};
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
