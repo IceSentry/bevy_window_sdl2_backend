@@ -1325,6 +1325,7 @@ dependencies = [
  "bevy",
  "bevy_app",
  "bevy_ecs",
+ "bevy_input",
  "bevy_math",
  "bevy_platform",
  "bevy_window",
