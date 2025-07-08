@@ -14,6 +14,7 @@ use bevy_ecs::{
     system::{Commands, NonSendMarker, Query, SystemParamItem, SystemState},
     world::FromWorld,
 };
+use bevy_math::{DVec2, UVec2};
 use bevy_platform::collections::HashMap;
 use bevy_window::{CursorOptions, RawHandleWrapper, RawHandleWrapperHolder, WindowCreated};
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle};
@@ -233,6 +234,7 @@ fn handle_sdl_window_event(
     match win_event {
         sdl2::event::WindowEvent::Resized(width, height)
         | sdl2::event::WindowEvent::SizeChanged(width, height) => {
+            println!("resized {width} {height}");
             window
                 .resolution
                 .set_physical_resolution(width as u32, height as u32);
@@ -292,6 +294,48 @@ fn changed_bevy_windows(
             }
             if window.resizable != cache.0.resizable {
                 sdl_window.set_resizable(window.resizable);
+            }
+            if window.resolution != cache.0.resolution {
+                let mut physical_size = UVec2::new(
+                    window.resolution.physical_width(),
+                    window.resolution.physical_height(),
+                );
+
+                let cached_physical_size =
+                    UVec2::new(cache.0.physical_width(), cache.0.physical_height());
+
+                let base_scale_factor = window.resolution.base_scale_factor();
+
+                // Note: this may be different from `winit`'s base scale factor if
+                // `scale_factor_override` is set to Some(f32)
+                let scale_factor = window.scale_factor();
+                let cached_scale_factor = cache.0.scale_factor();
+
+                // Check and update `winit`'s physical size only if the window is not maximized
+                if scale_factor != cached_scale_factor && !sdl_window.is_maximized() {
+                    let logical_size =
+                        if let Some(cached_factor) = cache.0.resolution.scale_factor_override() {
+                            physical_size.as_dvec2() / cached_factor as f64
+                        } else {
+                            physical_size.as_dvec2() / base_scale_factor as f64
+                        };
+
+                    // Scale factor changed, updating physical and logical size
+                    if let Some(forced_factor) = window.resolution.scale_factor_override() {
+                        // This window is overriding the OS-suggested DPI, so its physical size
+                        // should be set based on the overriding value. Its logical size already
+                        // incorporates any resize constraints.
+                        physical_size = (logical_size * forced_factor as f64).as_uvec2();
+                    } else {
+                        physical_size = (logical_size * base_scale_factor as f64).as_uvec2();
+                    }
+                }
+
+                if physical_size != cached_physical_size {
+                    sdl_window
+                        .set_size(physical_size.x, physical_size.y)
+                        .expect("Failed to set window size");
+                }
             }
             *cache = CachedWindow(window.clone());
         }

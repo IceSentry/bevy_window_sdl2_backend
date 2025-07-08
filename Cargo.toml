@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 bevy_app = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
+bevy_math = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 bevy_ecs = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 bevy_window = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 bevy_platform = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
