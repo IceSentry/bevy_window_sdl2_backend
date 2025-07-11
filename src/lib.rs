@@ -11,7 +11,7 @@ use bevy_ecs::{
     world::FromWorld,
 };
 use bevy_log::error;
-use bevy_math::UVec2;
+use bevy_math::{UVec2, Vec2};
 use converters::{convert_sdl_keycode, convert_sdl_scancode};
 use create_windows::CreateWindowParams;
 use create_windows::create_windows;
@@ -196,6 +196,22 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                             },
                         ));
                     });
+                }
+                Event::MouseMotion {
+                    timestamp: _,
+                    window_id: _,
+                    which: _,
+                    x,
+                    y,
+                    mousestate: _,
+                    xrel: _,
+                    yrel: _,
+                } => {
+                    bevy_window_events.push(bevy_window::WindowEvent::MouseMotion(
+                        bevy_input::mouse::MouseMotion {
+                            delta: Vec2::new(x as f32, y as f32),
+                        },
+                    ));
                 }
                 _ => {
                     // dbg!(e);
