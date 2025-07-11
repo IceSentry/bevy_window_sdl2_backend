@@ -81,10 +81,10 @@ pub fn convert_sdl_scancode(scancode: sdl2::keyboard::Scancode) -> bevy_input::k
         SdlScancode::Delete => todo!(),
         SdlScancode::End => todo!(),
         SdlScancode::PageDown => todo!(),
-        SdlScancode::Right => todo!(),
-        SdlScancode::Left => todo!(),
-        SdlScancode::Down => todo!(),
-        SdlScancode::Up => todo!(),
+        SdlScancode::Right => BevyKeyCode::ArrowRight,
+        SdlScancode::Left => BevyKeyCode::ArrowLeft,
+        SdlScancode::Down => BevyKeyCode::ArrowDown,
+        SdlScancode::Up => BevyKeyCode::ArrowUp,
         SdlScancode::NumLockClear => todo!(),
         SdlScancode::KpDivide => todo!(),
         SdlScancode::KpMultiply => todo!(),
@@ -454,6 +454,7 @@ pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> bevy_input::keyb
         SdlKeycode::BACKSPACE => BevyKey::Backspace,
         SdlKeycode::SPACE => BevyKey::Space,
         SdlKeycode::ESCAPE => BevyKey::Escape,
+        SdlKeycode::TAB => BevyKey::Tab,
 
         SdlKeycode::Kp0
         | SdlKeycode::Kp1
@@ -501,6 +502,10 @@ pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> bevy_input::keyb
         | SdlKeycode::X
         | SdlKeycode::Y
         | SdlKeycode::Z => BevyKey::Character(keycode.name().into()),
+        SdlKeycode::Up => BevyKey::ArrowUp,
+        SdlKeycode::Down => BevyKey::ArrowDown,
+        SdlKeycode::Left => BevyKey::ArrowLeft,
+        SdlKeycode::Right => BevyKey::ArrowRight,
 
         _ => {
             unimplemented!("{keycode:?}: {}", keycode.name())
