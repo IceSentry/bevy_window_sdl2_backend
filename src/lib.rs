@@ -12,14 +12,12 @@ use bevy_ecs::{
 };
 use bevy_log::error;
 use bevy_math::{UVec2, Vec2};
-use converters::{convert_sdl_keycode, convert_sdl_scancode};
+use converters::{convert_sdl_keycode, convert_sdl_scancode, convert_sdl_touch_event};
 use create_windows::CreateWindowParams;
 use create_windows::create_windows;
 use event_handlers::{HandleSdlWindowEventParams, forward_bevy_events, handle_sdl_window_event};
 use sdl_windows::SdlWindows;
 use sdl2::{Sdl, event::Event};
-
-use crate::converters::convert_sdl_mouse_btn;
 
 mod converters;
 mod create_windows;
@@ -86,12 +84,11 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                     });
                 }
                 Event::KeyDown {
-                    timestamp: _,
                     window_id,
                     keycode,
                     scancode,
-                    keymod: _,
                     repeat,
+                    ..
                 } => {
                     SDL_WINDOWS.with_borrow(|windows| {
                         let entity = windows
@@ -116,12 +113,11 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                     });
                 }
                 Event::KeyUp {
-                    timestamp: _,
                     window_id,
                     keycode,
                     scancode,
-                    keymod: _,
                     repeat,
+                    ..
                 } => {
                     SDL_WINDOWS.with_borrow(|windows| {
                         let entity = windows
@@ -146,19 +142,15 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                     });
                 }
                 Event::MouseButtonDown {
-                    timestamp: _,
                     window_id,
-                    which: _,
                     mouse_btn,
-                    clicks: _,
-                    x: _,
-                    y: _,
+                    ..
                 } => {
                     SDL_WINDOWS.with_borrow(|windows| {
                         let entity = windows
                             .get_window_entity(window_id)
                             .expect("Window entity not found");
-                        let Some(button) = convert_sdl_mouse_btn(mouse_btn) else {
+                        let Some(button) = converters::convert_sdl_mouse_btn(mouse_btn) else {
                             error!("Unknown mouse button: {:?}", mouse_btn);
                             return;
                         };
@@ -172,19 +164,15 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                     });
                 }
                 Event::MouseButtonUp {
-                    timestamp: _,
                     window_id,
-                    which: _,
                     mouse_btn,
-                    clicks: _,
-                    x: _,
-                    y: _,
+                    ..
                 } => {
                     SDL_WINDOWS.with_borrow(|windows| {
                         let entity = windows
                             .get_window_entity(window_id)
                             .expect("Window entity not found");
-                        let Some(button) = convert_sdl_mouse_btn(mouse_btn) else {
+                        let Some(button) = converters::convert_sdl_mouse_btn(mouse_btn) else {
                             error!("Unknown mouse button: {:?}", mouse_btn);
                             return;
                         };
@@ -197,16 +185,7 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         ));
                     });
                 }
-                Event::MouseMotion {
-                    timestamp: _,
-                    window_id: _,
-                    which: _,
-                    x,
-                    y,
-                    mousestate: _,
-                    xrel: _,
-                    yrel: _,
-                } => {
+                Event::MouseMotion { x, y, .. } => {
                     bevy_window_events.push(bevy_window::WindowEvent::MouseMotion(
                         bevy_input::mouse::MouseMotion {
                             delta: Vec2::new(x as f32, y as f32),
@@ -214,16 +193,10 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                     ));
                 }
                 Event::MouseWheel {
-                    timestamp: _,
                     window_id,
-                    which: _,
-                    x: _,
-                    y: _,
-                    direction: _,
                     precise_x,
                     precise_y,
-                    mouse_x: _,
-                    mouse_y: _,
+                    ..
                 } => {
                     SDL_WINDOWS.with_borrow(|windows| {
                         let entity = windows
@@ -236,6 +209,129 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                                 y: precise_y,
                                 window: entity,
                             },
+                        ));
+                    });
+                }
+                Event::TextInput {
+                    window_id,
+                    ref text,
+                    ..
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let Some(entity) = windows.get_window_entity(window_id) else {
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::Ime(
+                            bevy_window::Ime::Commit {
+                                window: entity,
+                                value: text.clone(),
+                            },
+                        ));
+                    });
+                }
+                Event::TextEditing {
+                    window_id,
+                    ref text,
+                    start,
+                    length,
+                    ..
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let Some(entity) = windows.get_window_entity(window_id) else {
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::Ime(
+                            bevy_window::Ime::Preedit {
+                                window: entity,
+                                value: text.clone(),
+                                cursor: Some((start as usize, (start + length) as usize)),
+                            },
+                        ));
+                    });
+                }
+                Event::DropFile {
+                    window_id,
+                    ref filename,
+                    ..
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let Some(entity) = windows.get_window_entity(window_id) else {
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::FileDragAndDrop(
+                            bevy_window::FileDragAndDrop::DroppedFile {
+                                window: entity,
+                                path_buf: std::path::PathBuf::from(filename),
+                            },
+                        ));
+                    });
+                }
+                Event::FingerDown {
+                    finger_id,
+                    x,
+                    y,
+                    pressure,
+                    ..
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let Some(entity) = windows.get_window_entity(0) else {
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::TouchInput(
+                            convert_sdl_touch_event(
+                                bevy_input::touch::TouchPhase::Started,
+                                finger_id,
+                                x,
+                                y,
+                                pressure,
+                                entity,
+                            ),
+                        ));
+                    });
+                }
+                Event::FingerUp {
+                    finger_id,
+                    x,
+                    y,
+                    pressure,
+                    ..
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let Some(entity) = windows.get_window_entity(0) else {
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::TouchInput(
+                            convert_sdl_touch_event(
+                                bevy_input::touch::TouchPhase::Ended,
+                                finger_id,
+                                x,
+                                y,
+                                pressure,
+                                entity,
+                            ),
+                        ));
+                    });
+                }
+                Event::FingerMotion {
+                    finger_id,
+                    x,
+                    y,
+                    pressure,
+                    ..
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let Some(entity) = windows.get_window_entity(0) else {
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::TouchInput(
+                            convert_sdl_touch_event(
+                                bevy_input::touch::TouchPhase::Moved,
+                                finger_id,
+                                x,
+                                y,
+                                pressure,
+                                entity,
+                            ),
                         ));
                     });
                 }

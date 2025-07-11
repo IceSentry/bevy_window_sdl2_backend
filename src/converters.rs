@@ -474,3 +474,25 @@ pub fn convert_sdl_mouse_btn(
         SdlMouseButton::Unknown => return None,
     })
 }
+
+pub fn convert_sdl_touch_event(
+    phase: bevy_input::touch::TouchPhase,
+    finger_id: i64,
+    x: f32,
+    y: f32,
+    pressure: f32,
+    window: bevy_ecs::entity::Entity,
+) -> bevy_input::touch::TouchInput {
+    let force = if pressure != 0.0 {
+        Some(bevy_input::touch::ForceTouch::Normalized(pressure as f64))
+    } else {
+        None
+    };
+    bevy_input::touch::TouchInput {
+        phase,
+        id: finger_id as u64,
+        position: bevy_math::Vec2::new(x, y),
+        window,
+        force,
+    }
+}
