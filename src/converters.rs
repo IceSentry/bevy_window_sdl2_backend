@@ -1,9 +1,11 @@
-pub fn convert_sdl_scancode(scancode: sdl2::keyboard::Scancode) -> bevy_input::keyboard::KeyCode {
+pub fn convert_sdl_scancode(
+    scancode: sdl2::keyboard::Scancode,
+) -> Option<bevy_input::keyboard::KeyCode> {
     use bevy_input::keyboard::KeyCode as BevyKeyCode;
     use sdl2::keyboard::Scancode as SdlScancode;
 
     #[allow(unreachable_patterns)]
-    match scancode {
+    let bevy_key = match scancode {
         // Letter keys
         SdlScancode::A => BevyKeyCode::KeyA,
         SdlScancode::B => BevyKeyCode::KeyB,
@@ -192,6 +194,7 @@ pub fn convert_sdl_scancode(scancode: sdl2::keyboard::Scancode) -> bevy_input::k
         SdlScancode::KpMemSubtract => BevyKeyCode::NumpadMemorySubtract,
         SdlScancode::Num => BevyKeyCode::NumLock,
 
+        // Unimplemented scancodes
         SdlScancode::NonUsHash
         | SdlScancode::Kp00
         | SdlScancode::Kp000
@@ -272,8 +275,9 @@ pub fn convert_sdl_scancode(scancode: sdl2::keyboard::Scancode) -> bevy_input::k
         | SdlScancode::Menu
         | SdlScancode::NumLockClear
         | SdlScancode::Power
-        | SdlScancode::Mode => unimplemented!("SDL scancode {:?} is not yet supported", scancode),
-    }
+        | SdlScancode::Mode => return None,
+    };
+    Some(bevy_key)
 }
 
 pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> bevy_input::keyboard::Key {

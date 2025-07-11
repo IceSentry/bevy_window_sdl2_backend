@@ -94,10 +94,14 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         let entity = windows
                             .get_window_entity(window_id)
                             .expect("Window entity not found");
+                        let Some(key_code) = scancode.and_then(convert_sdl_scancode) else {
+                            return;
+                        };
+                        let Some(keycode) = keycode else { return };
                         bevy_window_events.push(bevy_window::WindowEvent::KeyboardInput(
                             bevy_input::keyboard::KeyboardInput {
-                                key_code: convert_sdl_scancode(scancode.expect("missing scancode")),
-                                logical_key: convert_sdl_keycode(keycode.expect("missing keycode")),
+                                key_code,
+                                logical_key: convert_sdl_keycode(keycode),
                                 state: bevy_input::ButtonState::Pressed,
                                 text: None,
                                 repeat,
@@ -118,10 +122,14 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         let entity = windows
                             .get_window_entity(window_id)
                             .expect("Window entity not found");
+                        let Some(key_code) = scancode.and_then(convert_sdl_scancode) else {
+                            return;
+                        };
+                        let Some(keycode) = keycode else { return };
                         bevy_window_events.push(bevy_window::WindowEvent::KeyboardInput(
                             bevy_input::keyboard::KeyboardInput {
-                                key_code: convert_sdl_scancode(scancode.expect("missing scancode")),
-                                logical_key: convert_sdl_keycode(keycode.expect("missing keycode")),
+                                key_code,
+                                logical_key: convert_sdl_keycode(keycode),
                                 state: bevy_input::ButtonState::Released,
                                 text: None,
                                 repeat,
