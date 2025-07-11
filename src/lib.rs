@@ -213,6 +213,32 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         },
                     ));
                 }
+                Event::MouseWheel {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    x: _,
+                    y: _,
+                    direction: _,
+                    precise_x,
+                    precise_y,
+                    mouse_x: _,
+                    mouse_y: _,
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let entity = windows
+                            .get_window_entity(window_id)
+                            .expect("Window entity not found");
+                        bevy_window_events.push(bevy_window::WindowEvent::MouseWheel(
+                            bevy_input::mouse::MouseWheel {
+                                unit: bevy_input::mouse::MouseScrollUnit::Line,
+                                x: precise_x,
+                                y: precise_y,
+                                window: entity,
+                            },
+                        ));
+                    });
+                }
                 _ => {
                     // dbg!(e);
                 }
