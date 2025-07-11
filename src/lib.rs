@@ -97,11 +97,13 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         let Some(key_code) = scancode.and_then(convert_sdl_scancode) else {
                             return;
                         };
-                        let Some(keycode) = keycode else { return };
+                        let Some(logical_key) = keycode.and_then(convert_sdl_keycode) else {
+                            return;
+                        };
                         bevy_window_events.push(bevy_window::WindowEvent::KeyboardInput(
                             bevy_input::keyboard::KeyboardInput {
                                 key_code,
-                                logical_key: convert_sdl_keycode(keycode),
+                                logical_key,
                                 state: bevy_input::ButtonState::Pressed,
                                 text: None,
                                 repeat,
@@ -125,11 +127,13 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         let Some(key_code) = scancode.and_then(convert_sdl_scancode) else {
                             return;
                         };
-                        let Some(keycode) = keycode else { return };
+                        let Some(logical_key) = keycode.and_then(convert_sdl_keycode) else {
+                            return;
+                        };
                         bevy_window_events.push(bevy_window::WindowEvent::KeyboardInput(
                             bevy_input::keyboard::KeyboardInput {
                                 key_code,
-                                logical_key: convert_sdl_keycode(keycode),
+                                logical_key,
                                 state: bevy_input::ButtonState::Released,
                                 text: None,
                                 repeat,

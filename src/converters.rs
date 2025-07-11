@@ -280,38 +280,14 @@ pub fn convert_sdl_scancode(
     Some(bevy_key)
 }
 
-pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> bevy_input::keyboard::Key {
+pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> Option<bevy_input::keyboard::Key> {
     use bevy_input::keyboard::Key as BevyKey;
     use sdl2::keyboard::Keycode as SdlKeycode;
 
     #[allow(unreachable_patterns)]
-    match keycode {
-        SdlKeycode::BACKSPACE => BevyKey::Backspace,
-        SdlKeycode::SPACE => BevyKey::Space,
-        SdlKeycode::ESCAPE => BevyKey::Escape,
-        SdlKeycode::TAB => BevyKey::Tab,
-
-        SdlKeycode::Kp0
-        | SdlKeycode::Kp1
-        | SdlKeycode::Kp2
-        | SdlKeycode::Kp3
-        | SdlKeycode::Kp4
-        | SdlKeycode::Kp5
-        | SdlKeycode::Kp6
-        | SdlKeycode::Kp7
-        | SdlKeycode::Kp8
-        | SdlKeycode::Kp9
-        | SdlKeycode::Num1
-        | SdlKeycode::Num2
-        | SdlKeycode::Num3
-        | SdlKeycode::Num4
-        | SdlKeycode::Num5
-        | SdlKeycode::Num6
-        | SdlKeycode::Num7
-        | SdlKeycode::Num8
-        | SdlKeycode::Num9
-        | SdlKeycode::Num0
-        | SdlKeycode::A
+    Some(match keycode {
+        // Letter keys
+        SdlKeycode::A
         | SdlKeycode::B
         | SdlKeycode::C
         | SdlKeycode::D
@@ -337,13 +313,149 @@ pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> bevy_input::keyb
         | SdlKeycode::X
         | SdlKeycode::Y
         | SdlKeycode::Z => BevyKey::Character(keycode.name().into()),
-        SdlKeycode::Up => BevyKey::ArrowUp,
-        SdlKeycode::Down => BevyKey::ArrowDown,
-        SdlKeycode::Left => BevyKey::ArrowLeft,
-        SdlKeycode::Right => BevyKey::ArrowRight,
 
-        _ => {
-            unimplemented!("{keycode:?}: {}", keycode.name())
-        }
-    }
+        // Number keys
+        SdlKeycode::NUM_0
+        | SdlKeycode::NUM_1
+        | SdlKeycode::NUM_2
+        | SdlKeycode::NUM_3
+        | SdlKeycode::NUM_4
+        | SdlKeycode::NUM_5
+        | SdlKeycode::NUM_6
+        | SdlKeycode::NUM_7
+        | SdlKeycode::NUM_8
+        | SdlKeycode::NUM_9 => BevyKey::Character(keycode.name().into()),
+
+        // Function keys
+        SdlKeycode::F1 => BevyKey::F1,
+        SdlKeycode::F2 => BevyKey::F2,
+        SdlKeycode::F3 => BevyKey::F3,
+        SdlKeycode::F4 => BevyKey::F4,
+        SdlKeycode::F5 => BevyKey::F5,
+        SdlKeycode::F6 => BevyKey::F6,
+        SdlKeycode::F7 => BevyKey::F7,
+        SdlKeycode::F8 => BevyKey::F8,
+        SdlKeycode::F9 => BevyKey::F9,
+        SdlKeycode::F10 => BevyKey::F10,
+        SdlKeycode::F11 => BevyKey::F11,
+        SdlKeycode::F12 => BevyKey::F12,
+        SdlKeycode::F13 => BevyKey::F13,
+        SdlKeycode::F14 => BevyKey::F14,
+        SdlKeycode::F15 => BevyKey::F15,
+        SdlKeycode::F16 => BevyKey::F16,
+        SdlKeycode::F17 => BevyKey::F17,
+        SdlKeycode::F18 => BevyKey::F18,
+        SdlKeycode::F19 => BevyKey::F19,
+        SdlKeycode::F20 => BevyKey::F20,
+        SdlKeycode::F21 => BevyKey::F21,
+        SdlKeycode::F22 => BevyKey::F22,
+        SdlKeycode::F23 => BevyKey::F23,
+        SdlKeycode::F24 => BevyKey::F24,
+
+        // Navigation keys
+        SdlKeycode::INSERT => BevyKey::Insert,
+        SdlKeycode::HOME => BevyKey::Home,
+        SdlKeycode::END => BevyKey::End,
+        SdlKeycode::PAGEUP => BevyKey::PageUp,
+        SdlKeycode::PAGEDOWN => BevyKey::PageDown,
+        SdlKeycode::UP => BevyKey::ArrowUp,
+        SdlKeycode::DOWN => BevyKey::ArrowDown,
+        SdlKeycode::LEFT => BevyKey::ArrowLeft,
+        SdlKeycode::RIGHT => BevyKey::ArrowRight,
+
+        // Control keys
+        SdlKeycode::BACKSPACE => BevyKey::Backspace,
+        SdlKeycode::TAB => BevyKey::Tab,
+        SdlKeycode::RETURN => BevyKey::Enter,
+        SdlKeycode::ESCAPE => BevyKey::Escape,
+        SdlKeycode::SPACE => BevyKey::Space,
+        SdlKeycode::DELETE => BevyKey::Delete,
+        SdlKeycode::CAPSLOCK => BevyKey::CapsLock,
+        SdlKeycode::SCROLLLOCK => BevyKey::ScrollLock,
+        SdlKeycode::NUMLOCKCLEAR => BevyKey::NumLock,
+        SdlKeycode::PRINTSCREEN => BevyKey::PrintScreen,
+        SdlKeycode::PAUSE => BevyKey::Pause,
+        SdlKeycode::CLEAR => BevyKey::Clear,
+        SdlKeycode::SELECT => BevyKey::Select,
+        SdlKeycode::EXECUTE => BevyKey::Execute,
+        SdlKeycode::HELP => BevyKey::Help,
+        SdlKeycode::APPLICATION => BevyKey::ContextMenu,
+
+        // Modifier keys
+        SdlKeycode::LCTRL | SdlKeycode::RCTRL => BevyKey::Control,
+        SdlKeycode::LSHIFT | SdlKeycode::RSHIFT => BevyKey::Shift,
+        SdlKeycode::LALT | SdlKeycode::RALT => BevyKey::Alt,
+        SdlKeycode::LGUI | SdlKeycode::RGUI => BevyKey::Super,
+        SdlKeycode::MODE => BevyKey::ModeChange,
+
+        // Media and browser keys
+        SdlKeycode::AUDIONEXT => BevyKey::MediaTrackNext,
+        SdlKeycode::AUDIOPREV => BevyKey::MediaTrackPrevious,
+        SdlKeycode::AUDIOSTOP => BevyKey::MediaStop,
+        SdlKeycode::AUDIOPLAY => BevyKey::MediaPlay,
+        SdlKeycode::AUDIOMUTE => BevyKey::AudioVolumeMute,
+        SdlKeycode::VOLUMEUP => BevyKey::AudioVolumeUp,
+        SdlKeycode::VOLUMEDOWN => BevyKey::AudioVolumeDown,
+        SdlKeycode::MEDIASELECT => BevyKey::LaunchMediaPlayer,
+        SdlKeycode::MAIL => BevyKey::LaunchMail,
+        SdlKeycode::CALCULATOR => BevyKey::LaunchApplication2,
+        SdlKeycode::COMPUTER => BevyKey::LaunchApplication1,
+        SdlKeycode::AC_SEARCH => BevyKey::BrowserSearch,
+        SdlKeycode::AC_HOME => BevyKey::BrowserHome,
+        SdlKeycode::AC_BACK => BevyKey::BrowserBack,
+        SdlKeycode::AC_FORWARD => BevyKey::BrowserForward,
+        SdlKeycode::AC_STOP => BevyKey::BrowserStop,
+        SdlKeycode::AC_REFRESH => BevyKey::BrowserRefresh,
+        SdlKeycode::AC_BOOKMARKS => BevyKey::BrowserFavorites,
+
+        // Numpad keys
+        SdlKeycode::KP_0
+        | SdlKeycode::KP_1
+        | SdlKeycode::KP_2
+        | SdlKeycode::KP_3
+        | SdlKeycode::KP_4
+        | SdlKeycode::KP_5
+        | SdlKeycode::KP_6
+        | SdlKeycode::KP_7
+        | SdlKeycode::KP_8
+        | SdlKeycode::KP_9
+        | SdlKeycode::KP_PERIOD
+        | SdlKeycode::KP_DIVIDE
+        | SdlKeycode::KP_MULTIPLY
+        | SdlKeycode::KP_MINUS
+        | SdlKeycode::KP_PLUS
+        | SdlKeycode::KP_EQUALS => BevyKey::Character(keycode.name().into()),
+
+        // Symbol keys
+        SdlKeycode::EXCLAIM
+        | SdlKeycode::QUOTEDBL
+        | SdlKeycode::HASH
+        | SdlKeycode::DOLLAR
+        | SdlKeycode::PERCENT
+        | SdlKeycode::AMPERSAND
+        | SdlKeycode::QUOTE
+        | SdlKeycode::LEFTPAREN
+        | SdlKeycode::RIGHTPAREN
+        | SdlKeycode::ASTERISK
+        | SdlKeycode::PLUS
+        | SdlKeycode::COMMA
+        | SdlKeycode::MINUS
+        | SdlKeycode::PERIOD
+        | SdlKeycode::SLASH
+        | SdlKeycode::COLON
+        | SdlKeycode::SEMICOLON
+        | SdlKeycode::LESS
+        | SdlKeycode::EQUALS
+        | SdlKeycode::GREATER
+        | SdlKeycode::QUESTION
+        | SdlKeycode::AT
+        | SdlKeycode::LEFTBRACKET
+        | SdlKeycode::BACKSLASH
+        | SdlKeycode::RIGHTBRACKET
+        | SdlKeycode::CARET
+        | SdlKeycode::UNDERSCORE
+        | SdlKeycode::BACKQUOTE => BevyKey::Character(keycode.name().into()),
+
+        _ => return None,
+    })
 }
