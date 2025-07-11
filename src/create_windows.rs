@@ -69,7 +69,7 @@ pub fn create_windows<F: QueryFilter + 'static>(
                 .expect("failed to build window");
             if window.transparent {
                 sdl_window
-                    .set_opacity(0.0)
+                    .set_opacity(0.5)
                     .expect("Failed to set window opacity");
             }
             match cursor_options.grab_mode {
