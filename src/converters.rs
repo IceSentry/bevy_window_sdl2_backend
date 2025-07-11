@@ -459,3 +459,18 @@ pub fn convert_sdl_keycode(keycode: sdl2::keyboard::Keycode) -> Option<bevy_inpu
         _ => return None,
     })
 }
+
+pub fn convert_sdl_mouse_btn(
+    button: sdl2::mouse::MouseButton,
+) -> Option<bevy_input::mouse::MouseButton> {
+    use bevy_input::mouse::MouseButton as BevyMouseButton;
+    use sdl2::mouse::MouseButton as SdlMouseButton;
+    Some(match button {
+        SdlMouseButton::Left => BevyMouseButton::Left,
+        SdlMouseButton::Middle => BevyMouseButton::Middle,
+        SdlMouseButton::Right => BevyMouseButton::Right,
+        SdlMouseButton::X1 => BevyMouseButton::Back,
+        SdlMouseButton::X2 => BevyMouseButton::Forward,
+        SdlMouseButton::Unknown => return None,
+    })
+}

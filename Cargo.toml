@@ -10,6 +10,7 @@ bevy_ecs = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 bevy_window = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 bevy_platform = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 bevy_input = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
+bevy_log = { git = "https://github.com/bevyengine/bevy", rev = "5e3927b" }
 
 raw-window-handle = "0.6.2"
 sdl2 = { version = "0.37.0", features = [

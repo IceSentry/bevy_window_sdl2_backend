@@ -10,6 +10,7 @@ use bevy_ecs::{
     system::{NonSendMarker, Query, SystemState},
     world::FromWorld,
 };
+use bevy_log::error;
 use bevy_math::UVec2;
 use converters::{convert_sdl_keycode, convert_sdl_scancode};
 use create_windows::CreateWindowParams;
@@ -17,6 +18,8 @@ use create_windows::create_windows;
 use event_handlers::{HandleSdlWindowEventParams, forward_bevy_events, handle_sdl_window_event};
 use sdl_windows::SdlWindows;
 use sdl2::{Sdl, event::Event};
+
+use crate::converters::convert_sdl_mouse_btn;
 
 mod converters;
 mod create_windows;
@@ -137,6 +140,58 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                                 state: bevy_input::ButtonState::Released,
                                 text: None,
                                 repeat,
+                                window: entity,
+                            },
+                        ));
+                    });
+                }
+                Event::MouseButtonDown {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mouse_btn,
+                    clicks: _,
+                    x: _,
+                    y: _,
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let entity = windows
+                            .get_window_entity(window_id)
+                            .expect("Window entity not found");
+                        let Some(button) = convert_sdl_mouse_btn(mouse_btn) else {
+                            error!("Unknown mouse button: {:?}", mouse_btn);
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::MouseButtonInput(
+                            bevy_input::mouse::MouseButtonInput {
+                                button,
+                                state: bevy_input::ButtonState::Pressed,
+                                window: entity,
+                            },
+                        ));
+                    });
+                }
+                Event::MouseButtonUp {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mouse_btn,
+                    clicks: _,
+                    x: _,
+                    y: _,
+                } => {
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let entity = windows
+                            .get_window_entity(window_id)
+                            .expect("Window entity not found");
+                        let Some(button) = convert_sdl_mouse_btn(mouse_btn) else {
+                            error!("Unknown mouse button: {:?}", mouse_btn);
+                            return;
+                        };
+                        bevy_window_events.push(bevy_window::WindowEvent::MouseButtonInput(
+                            bevy_input::mouse::MouseButtonInput {
+                                button,
+                                state: bevy_input::ButtonState::Released,
                                 window: entity,
                             },
                         ));
