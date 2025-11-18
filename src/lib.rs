@@ -11,7 +11,8 @@ use bevy_ecs::{
     world::FromWorld,
 };
 use bevy_log::error;
-use bevy_math::{UVec2, Vec2};
+use bevy_math::{DVec2, UVec2, Vec2};
+use bevy_window::CursorIcon;
 use converters::{convert_sdl_keycode, convert_sdl_scancode, convert_sdl_touch_event};
 use create_windows::CreateWindowParams;
 use create_windows::create_windows;
@@ -33,6 +34,7 @@ impl Plugin for Sdl2WindowBackendPlugin {
     fn build(&self, app: &mut App) {
         let sdl_context = sdl2::init().expect("failed to init sdl");
         app.set_runner(|app| sdl_runner(app, sdl_context))
+            .add_systems(Last, set_cursor)
             .add_systems(Last, changed_bevy_windows);
     }
 }
@@ -185,12 +187,45 @@ fn sdl_runner(mut app: App, sdl_context: Sdl) -> AppExit {
                         ));
                     });
                 }
-                Event::MouseMotion { x, y, .. } => {
+                Event::MouseMotion {
+                    window_id,
+                    x,
+                    y,
+                    xrel,
+                    yrel,
+                    ..
+                } => {
                     bevy_window_events.push(bevy_window::WindowEvent::MouseMotion(
                         bevy_input::mouse::MouseMotion {
-                            delta: Vec2::new(x as f32, y as f32),
+                            delta: Vec2::new(xrel as f32, yrel as f32),
                         },
                     ));
+                    SDL_WINDOWS.with_borrow(|windows| {
+                        let entity = windows
+                            .get_window_entity(window_id)
+                            .expect("Window entity not found");
+                        let mut win = app
+                            .world_mut()
+                            .get_mut::<bevy_window::Window>(entity)
+                            .expect("Failed to get window");
+                        let physical_position = DVec2::new(x as f64, y as f64);
+
+                        let last_position = win.physical_cursor_position();
+                        let delta = last_position.map(|last_pos| {
+                            (physical_position.as_vec2() - last_pos) / win.resolution.scale_factor()
+                        });
+
+                        win.set_physical_cursor_position(Some(physical_position));
+                        let position =
+                            (physical_position / win.resolution.scale_factor() as f64).as_vec2();
+                        bevy_window_events.push(bevy_window::WindowEvent::CursorMoved(
+                            bevy_window::CursorMoved {
+                                delta,
+                                window: entity,
+                                position,
+                            },
+                        ));
+                    });
                 }
                 Event::MouseWheel {
                     window_id,
@@ -430,4 +465,66 @@ fn changed_bevy_windows(
             *cache = CachedWindow(window.clone());
         }
     });
+}
+
+thread_local! {
+    static ACTIVE_CURSOR: RefCell<Option<sdl2::mouse::Cursor>> = RefCell::new(None);
+}
+
+fn set_cursor(
+    q: Query<(Entity, &bevy_window::Window, &CursorIcon)>,
+    has_changed: Query<(), Changed<CursorIcon>>,
+    _marker: NonSendMarker,
+) {
+    for (entity, window, cursor_icon) in &q {
+        // We only want to update the cursor on the window that has a cursor
+        if window.physical_cursor_position().is_none() {
+            continue;
+        }
+        ACTIVE_CURSOR.with_borrow_mut(|active_cursor| {
+            let set_cursor = |active_cursor: &mut Option<sdl2::mouse::Cursor>,
+                              cursor_icon: &CursorIcon| {
+                let sdl_cursor = match cursor_icon {
+                    CursorIcon::Custom(_custom_cursor) => {
+                        bevy_log::warn_once!("Custom cursor icon are not supported");
+                        return;
+                    }
+                    CursorIcon::System(system_cursor_icon) => {
+                        if let Some(sys_cursor) = map_bevy_system_cursor_to_sdl(system_cursor_icon)
+                        {
+                            sdl2::mouse::Cursor::from_system(sys_cursor)
+                        } else {
+                            return;
+                        }
+                    }
+                }
+                .expect("Failed to create cursor");
+                sdl_cursor.set();
+                *active_cursor = Some(sdl_cursor);
+            };
+            if active_cursor.is_some() {
+                if has_changed.get(entity).is_ok() {
+                    set_cursor(active_cursor, cursor_icon)
+                }
+            } else {
+                // This should only happen once on startup
+                set_cursor(active_cursor, cursor_icon)
+            }
+        });
+        return;
+    }
+}
+
+fn map_bevy_system_cursor_to_sdl(
+    system_cursor: &bevy_window::SystemCursorIcon,
+) -> Option<sdl2::mouse::SystemCursor> {
+    Some(match system_cursor {
+        bevy_window::SystemCursorIcon::Default => sdl2::mouse::SystemCursor::Arrow,
+        bevy_window::SystemCursorIcon::Crosshair => sdl2::mouse::SystemCursor::Crosshair,
+        bevy_window::SystemCursorIcon::Text => sdl2::mouse::SystemCursor::IBeam,
+        cursor_icon => {
+            bevy_log::warn_once!("{cursor_icon:?} is not supported");
+            return None;
+        }
+    })
 }
