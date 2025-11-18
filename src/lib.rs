@@ -1,26 +1,24 @@
 #![allow(missing_docs, reason = "work in progress")]
 
 use core::cell::RefCell;
+use std::time::Duration;
 
-use bevy_app::{App, AppExit, Last, Plugin, PluginsState};
+use bevy_app::{App, AppExit, Last, Plugin, PluginsState, Update};
 use bevy_ecs::{
     component::Component,
     entity::Entity,
-    query::{Added, Changed},
-    system::{NonSendMarker, Query, SystemState},
-    world::FromWorld,
+    query::{Added, Changed, With},
+    resource::Resource,
+    system::{NonSendMarker, Query, ResMut, SystemState},
+    world::{FromWorld, Mut},
 };
-use bevy_log::error;
-use bevy_math::{DVec2, UVec2, Vec2};
-use bevy_window::CursorIcon;
-use converters::{convert_sdl_keycode, convert_sdl_scancode, convert_sdl_touch_event};
+use bevy_math::UVec2;
+use bevy_window::{CursorIcon, Window};
 use create_windows::CreateWindowParams;
 use create_windows::create_windows;
 use sdl_windows::SdlWindows;
-use sdl2::{Sdl, event::Event};
-use window_event_handler::{
-    HandleSdlWindowEventParams, forward_bevy_window_events, handle_sdl_window_event,
-};
+use sdl2::Sdl;
+use window_event_handler::forward_bevy_window_events;
 
 use crate::sdl2_event_handler::{HandleEventState, handle_sdl_event};
 
@@ -29,7 +27,6 @@ mod create_windows;
 mod sdl2_event_handler;
 mod sdl_windows;
 mod window_event_handler;
-
 
 thread_local! {
     pub static SDL_WINDOWS: RefCell<SdlWindows> = const { RefCell::new(SdlWindows::new()) };
