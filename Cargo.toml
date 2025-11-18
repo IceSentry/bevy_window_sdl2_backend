@@ -4,21 +4,30 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy_app = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy_math = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy_ecs = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy_window = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy_platform = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy_input = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy_log = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_app = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_math = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_ecs = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_window = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_platform = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_input = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy_log = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+
+bevy_app = "0.17"
+bevy_math = "0.17"
+bevy_ecs = "0.17"
+bevy_window = "0.17"
+bevy_platform = "0.17"
+bevy_input = "0.17"
+bevy_log = "0.17"
 
 raw-window-handle = "0.6.2"
-sdl2 = { version = "0.37.0", features = [
+sdl2 = { version = "0.38.0", features = [
   "raw-window-handle",
   "bundled",
   "static-link",
 ] }
-wgpu = "25.0.2"
+wgpu = "26"
 
 [dev-dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+# bevy = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
+bevy = "0.17"

@@ -2,7 +2,7 @@ use crate::CachedWindow;
 use bevy_ecs::{
     change_detection::DetectChanges,
     entity::Entity,
-    event::{EventWriter, Events},
+    message::{MessageWriter, Messages},
     system::{Query, SystemParamItem},
     world::World,
 };
@@ -10,12 +10,12 @@ use bevy_log::warn;
 
 pub type HandleSdlWindowEventParams<'w, 's> = (
     Query<'w, 's, (&'static mut bevy_window::Window, &'static mut CachedWindow)>,
-    EventWriter<'w, bevy_window::WindowResized>,
-    EventWriter<'w, bevy_window::WindowMoved>,
-    EventWriter<'w, bevy_window::CursorEntered>,
-    EventWriter<'w, bevy_window::CursorLeft>,
-    EventWriter<'w, bevy_window::WindowFocused>,
-    EventWriter<'w, bevy_window::WindowCloseRequested>,
+    MessageWriter<'w, bevy_window::WindowResized>,
+    MessageWriter<'w, bevy_window::WindowMoved>,
+    MessageWriter<'w, bevy_window::CursorEntered>,
+    MessageWriter<'w, bevy_window::CursorLeft>,
+    MessageWriter<'w, bevy_window::WindowFocused>,
+    MessageWriter<'w, bevy_window::WindowCloseRequested>,
 );
 
 pub fn handle_sdl_window_event(
@@ -103,91 +103,93 @@ pub fn forward_bevy_events(world: &mut World, events: Vec<bevy_window::WindowEve
     for sdl_event in events.iter() {
         match sdl_event.clone() {
             BevyWindowEvent::AppLifecycle(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::CursorEntered(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::CursorLeft(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::CursorMoved(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::FileDragAndDrop(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::Ime(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::RequestRedraw(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowBackendScaleFactorChanged(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowCloseRequested(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowCreated(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowDestroyed(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowFocused(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowMoved(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowOccluded(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowResized(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowScaleFactorChanged(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::WindowThemeChanged(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
+
             BevyWindowEvent::MouseButtonInput(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::MouseMotion(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::MouseWheel(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
+
             BevyWindowEvent::PinchGesture(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::RotationGesture(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::DoubleTapGesture(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::PanGesture(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::TouchInput(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::KeyboardInput(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
             BevyWindowEvent::KeyboardFocusLost(e) => {
-                world.write_event(e);
+                world.write_message(e);
             }
         }
     }
     if !events.is_empty() {
         world
-            .resource_mut::<Events<bevy_window::WindowEvent>>()
+            .resource_mut::<Messages<bevy_window::WindowEvent>>()
             .write_batch(events);
     }
 }

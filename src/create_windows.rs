@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::{CachedWindow, SDL_WINDOWS};
 use bevy_ecs::{
     entity::Entity,
-    event::EventWriter,
+    message::MessageWriter,
     query::QueryFilter,
     system::{Commands, Query, SystemParamItem},
 };
@@ -25,7 +25,7 @@ pub type CreateWindowParams<'w, 's, F = ()> = (
         ),
         F,
     >,
-    EventWriter<'w, WindowCreated>,
+    MessageWriter<'w, WindowCreated>,
 );
 pub fn create_windows<F: QueryFilter + 'static>(
     (mut commands, mut created_windows, mut window_created_events): SystemParamItem<
