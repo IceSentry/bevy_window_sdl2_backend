@@ -53,7 +53,15 @@ fn update_ui(
     limiter: Res<Sdl2FrameLimiter>,
     window: Single<&Window>,
 ) {
-    text.0 = format!("{} pres mode: {:?}", limiter.enabled, window.present_mode);
+    text.0 = format!(
+        "{} pres mode: {:?}",
+        if limiter.enabled {
+            format!("{}", limiter.target_framerate.unwrap())
+        } else {
+            "Unlimited".to_owned()
+        },
+        window.present_mode
+    );
 }
 
 pub fn update_cursor(window: Single<&Window>, mut gizmos: Gizmos) {
@@ -72,12 +80,16 @@ fn setup(mut commands: Commands, window: Single<Entity, With<Window>>) {
 
     // UI
     let text_font = TextFont {
-        font_size: 50.,
+        font_size: 42.,
         ..default()
     };
     commands
         .spawn(Text::default())
-        .with_child((TextSpan::new("Frame pacing: "), text_font.clone()))
+        .with_child((TextSpan::new("Frame limit: "), text_font.clone()))
         .with_child((TextSpan::new(""), text_font.clone(), EnableText))
-        .with_child((TextSpan::new("\n[press space]"), text_font));
+        .with_child((
+            TextSpan::new("\nPress space to toggle frame limiter"),
+            text_font.clone(),
+        ))
+        .with_child((TextSpan::new("\nPress T to toggle vsync"), text_font));
 }

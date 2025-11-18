@@ -55,10 +55,10 @@ impl Plugin for Sdl2WindowBackendPlugin {
 #[derive(Resource)]
 pub struct Sdl2FrameLimiter {
     pub enabled: bool,
-    render_target: std::time::Instant,
-    target_framerate: Option<i32>,
-    target_frame_time: Option<std::time::Duration>,
-    display_resfresh_rate: i32,
+    pub render_target: std::time::Instant,
+    pub target_framerate: Option<i32>,
+    pub target_frame_time: Option<std::time::Duration>,
+    pub display_resfresh_rate: i32,
 }
 
 impl Default for Sdl2FrameLimiter {
