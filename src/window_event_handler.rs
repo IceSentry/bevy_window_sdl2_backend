@@ -98,7 +98,7 @@ pub fn handle_sdl_window_event(
     }
 }
 
-pub fn forward_bevy_events(world: &mut World, events: Vec<bevy_window::WindowEvent>) {
+pub fn forward_bevy_window_events(world: &mut World, events: Vec<bevy_window::WindowEvent>) {
     use bevy_window::WindowEvent as BevyWindowEvent;
     for sdl_event in events.iter() {
         match sdl_event.clone() {
