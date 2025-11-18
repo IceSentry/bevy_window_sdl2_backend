@@ -27,6 +27,7 @@ sdl2 = { version = "0.38.0", features = [
   "static-link",
 ] }
 wgpu = "26"
+spin_sleep = "1.3.3"
 
 [dev-dependencies]
 # bevy = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
