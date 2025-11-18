@@ -6,38 +6,90 @@ use bevy_ecs::{
     system::{Query, SystemParamItem},
     world::World,
 };
+use bevy_log::warn;
 
 pub type HandleSdlWindowEventParams<'w, 's> = (
     Query<'w, 's, (&'static mut bevy_window::Window, &'static mut CachedWindow)>,
     EventWriter<'w, bevy_window::WindowResized>,
+    EventWriter<'w, bevy_window::WindowMoved>,
+    EventWriter<'w, bevy_window::CursorEntered>,
+    EventWriter<'w, bevy_window::CursorLeft>,
+    EventWriter<'w, bevy_window::WindowFocused>,
+    EventWriter<'w, bevy_window::WindowCloseRequested>,
 );
+
 pub fn handle_sdl_window_event(
-    (mut query, mut window_resized): SystemParamItem<HandleSdlWindowEventParams>,
+    (
+        mut query,
+        mut window_resized,
+        mut window_moved,
+        mut cursor_entered,
+        mut cursor_left,
+        mut window_focused,
+        mut window_close_requested,
+    ): SystemParamItem<HandleSdlWindowEventParams>,
     entity: Entity,
     win_event: sdl2::event::WindowEvent,
 ) {
+    use sdl2::event::WindowEvent as SdlWindowEvent;
     let (mut window, _) = query.get_mut(entity).expect("failed to get Window");
     match win_event {
-        sdl2::event::WindowEvent::Resized(width, height)
-        | sdl2::event::WindowEvent::SizeChanged(width, height) => {
-            println!("resized {width} {height}");
+        SdlWindowEvent::Resized(width, height) | SdlWindowEvent::SizeChanged(width, height) => {
+            // WARN SDL sends these events twice for some reason, not sure if that's a problem
             window
                 .resolution
                 .set_physical_resolution(width as u32, height as u32);
-
             window_resized.write(bevy_window::WindowResized {
                 window: entity,
                 width: window.width(),
                 height: window.height(),
             });
         }
-        sdl2::event::WindowEvent::Shown => {
+        SdlWindowEvent::Moved(x, y) => {
+            window_moved.write(bevy_window::WindowMoved {
+                window: entity,
+                position: bevy_math::IVec2::new(x, y),
+            });
+        }
+        SdlWindowEvent::Shown => {
             window.visible = true;
         }
-        sdl2::event::WindowEvent::Hidden => {
+        SdlWindowEvent::Hidden => {
             window.visible = false;
         }
-        _ => {}
+        SdlWindowEvent::Maximized => {
+            window.set_maximized(true);
+        }
+        SdlWindowEvent::Minimized => {
+            window.set_minimized(true);
+        }
+        SdlWindowEvent::Enter => {
+            cursor_entered.write(bevy_window::CursorEntered { window: entity });
+        }
+        SdlWindowEvent::Leave => {
+            window.set_cursor_position(None);
+            cursor_left.write(bevy_window::CursorLeft { window: entity });
+        }
+        SdlWindowEvent::FocusGained => {
+            window.focused = true;
+            window_focused.write(bevy_window::WindowFocused {
+                window: entity,
+                focused: true,
+            });
+        }
+        SdlWindowEvent::FocusLost => {
+            window.focused = false;
+            window_focused.write(bevy_window::WindowFocused {
+                window: entity,
+                focused: false,
+            });
+        }
+        SdlWindowEvent::Close => {
+            window_close_requested.write(bevy_window::WindowCloseRequested { window: entity });
+        }
+        event => {
+            warn!("sdl WindowEvent {event:?} not handled");
+        }
     }
 
     let (window, mut cached_window) = query.get_mut(entity).expect("failed to get Window");
