@@ -12,13 +12,13 @@ edition = "2024"
 # bevy_input = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
 # bevy_log = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
 
-bevy_app = "0.17"
-bevy_math = "0.17"
-bevy_ecs = "0.17"
-bevy_window = "0.17"
-bevy_platform = "0.17"
-bevy_input = "0.17"
-bevy_log = "0.17"
+bevy_app = "0.18"
+bevy_math = "0.18"
+bevy_ecs = "0.18"
+bevy_window = "0.18"
+bevy_platform = "0.18"
+bevy_input = "0.18"
+bevy_log = "0.18"
 
 raw-window-handle = "0.6.2"
 sdl2 = { version = "0.38.0", features = [
@@ -26,9 +26,9 @@ sdl2 = { version = "0.38.0", features = [
   "bundled",
   "static-link",
 ] }
-wgpu = "26"
+wgpu = "27"
 spin_sleep = "1.3.3"
 
 [dev-dependencies]
 # bevy = { git = "https://github.com/bevyengine/bevy", rev = "df5dfcd2988fd" }
-bevy = "0.17"
+bevy = "0.18"

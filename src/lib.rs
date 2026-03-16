@@ -269,10 +269,6 @@ fn set_cursor(
             let set_cursor = |active_cursor: &mut Option<sdl2::mouse::Cursor>,
                               cursor_icon: &CursorIcon| {
                 let sdl_cursor = match cursor_icon {
-                    CursorIcon::Custom(_custom_cursor) => {
-                        bevy_log::warn_once!("Custom cursor icon are not supported");
-                        return;
-                    }
                     CursorIcon::System(system_cursor_icon) => {
                         if let Some(sys_cursor) = map_bevy_system_cursor_to_sdl(system_cursor_icon)
                         {
@@ -280,6 +276,11 @@ fn set_cursor(
                         } else {
                             return;
                         }
+                    }
+                    #[allow(unreachable_patterns)]
+                    _ => {
+                        bevy_log::warn_once!("Custom cursor icon are not supported");
+                        return;
                     }
                 }
                 .expect("Failed to create cursor");
