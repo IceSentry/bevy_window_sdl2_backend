@@ -199,6 +199,10 @@ fn sdl_runner(mut app: App) -> AppExit {
 
         app.update();
 
+        if app.should_exit().is_some() {
+            break 'running;
+        }
+
         app.world_mut()
             .resource_scope(|_world, mut limiter: Mut<Sdl2FrameLimiter>| {
                 if limiter.enabled {
