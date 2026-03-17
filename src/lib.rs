@@ -119,8 +119,9 @@ fn sdl_runner(mut app: App) -> AppExit {
         app.finish();
         app.cleanup();
     }
-    // Some events are only sent through the event watcher but don't reach the event pump
-    let (event_watch_sender, event_watch_receiver) = crossbeam_channel::unbounded();
+    // We use a channel to send SDL events back to the bevy thread
+    //
+    let (sdl_event_sender, sdl_event_receiver) = crossbeam_channel::bounded(1);
 
     // When creating a window from bevy, we use a channel to send a message to the sdl thread to
     // build the window. When the window is ready it gets back to the bevy thread
@@ -150,8 +151,24 @@ fn sdl_runner(mut app: App) -> AppExit {
             return AppExit::error();
         };
         let _event_watch = event.add_event_watch(|event| {
-            if let Err(err) = event_watch_sender.send(event) {
-                bevy_log::error!("Failed to send sdl2 event to main loop.\n{err}");
+            if let sdl2::event::Event::Window {
+                timestamp,
+                window_id,
+                win_event,
+            } = event
+            {
+                match win_event {
+                    // SDL blocks the event pump on resize so we need to read these events from the
+                    // event watch callback
+                    sdl2::event::WindowEvent::Exposed
+                    | sdl2::event::WindowEvent::Resized(_, _)
+                    | sdl2::event::WindowEvent::SizeChanged(_, _) => {
+                        let _ = sdl_event_sender.send(event);
+                    }
+                    _ => {
+                        // do nothing, handle most events in the poll_iter
+                    }
+                }
             }
         });
 
@@ -161,7 +178,9 @@ fn sdl_runner(mut app: App) -> AppExit {
             {
                 build_sdl_window(&video_subsystem, &window, &cursor_options, ready_sender);
             }
-            event_pump.pump_events();
+            for event in event_pump.poll_iter() {
+                sdl_event_sender.send(event);
+            }
         }
     });
 
@@ -187,7 +206,7 @@ fn sdl_runner(mut app: App) -> AppExit {
                 }
             });
 
-        while let Ok(event) = event_watch_receiver.try_recv() {
+        while let Ok(event) = sdl_event_receiver.try_recv() {
             match handle_sdl_event(&mut app, event, &mut bevy_window_events) {
                 HandleEventState::Exit => break 'running,
                 HandleEventState::Continue => {}
