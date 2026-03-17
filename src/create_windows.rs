@@ -1,6 +1,4 @@
-use std::sync::{Arc, Mutex};
-
-use crate::{CachedWindow, SDL_WINDOWS, SendSyncSdlWindow};
+use crate::{sdl_windows::SendSyncSdlWindow, CachedWindow, SDL_WINDOWS};
 use bevy_ecs::{
     entity::Entity,
     message::MessageWriter,
@@ -13,7 +11,7 @@ use bevy_window::{
 use crossbeam_channel::Sender;
 use sdl2::VideoSubsystem;
 
-pub type WindowReady = (u32, Arc<Mutex<SendSyncSdlWindow>>);
+pub type WindowReady = (u32, SendSyncSdlWindow);
 
 pub fn build_sdl_window(
     video_subsystem: &VideoSubsystem,
@@ -62,8 +60,7 @@ pub fn build_sdl_window(
     }
 
     let sdl_window_id = sdl_window.id();
-    let arc = Arc::new(Mutex::new(SendSyncSdlWindow(sdl_window)));
-    let _ = ready_sender.send((sdl_window_id, arc));
+    let _ = ready_sender.send((sdl_window_id, SendSyncSdlWindow(sdl_window)));
 }
 
 pub type CreateWindowParams<'w, 's, F = ()> = (
@@ -101,13 +98,11 @@ pub fn create_windows<F: QueryFilter + 'static>(
         let (ready_sender, ready_receiver) = crossbeam_channel::bounded(1);
         let _ = sender.send((entity, window.clone(), cursor_options.clone(), ready_sender));
 
-        let (sdl_window_id, arc) = ready_receiver.recv().expect("Failed to create SDL window");
+        let (sdl_window_id, sdl_window) =
+            ready_receiver.recv().expect("Failed to create SDL window");
 
-        let raw_handle_wrapper = {
-            let guard = arc.lock().expect("SDL window mutex poisoned");
-            RawHandleWrapper::new(&WindowWrapper::new(SendSyncSdlWindow(guard.0.clone())))
-                .expect("Failed to create raw handle wrapper")
-        };
+        let raw_handle_wrapper = RawHandleWrapper::new(&WindowWrapper::new(sdl_window.clone()))
+            .expect("Failed to create raw handle wrapper");
 
         if let Some(handle_holder) = maybe_handle_holder {
             commands.entity(entity).insert(raw_handle_wrapper.clone());
@@ -120,7 +115,7 @@ pub fn create_windows<F: QueryFilter + 'static>(
         bevy_log::info!("window created {entity}");
 
         SDL_WINDOWS.with_borrow_mut(|windows| {
-            windows.windows.insert(sdl_window_id, Arc::clone(&arc));
+            windows.windows.insert(sdl_window_id, sdl_window);
             windows.entity_to_sdl_window.insert(entity, sdl_window_id);
             windows.sdl_window_to_entity.insert(sdl_window_id, entity);
         });

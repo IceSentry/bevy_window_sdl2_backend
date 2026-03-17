@@ -1,5 +1,4 @@
-use std::sync::{Arc, Mutex};
-
+use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::entity::{Entity, EntityHashMap};
 use bevy_platform::collections::HashMap;
 use raw_window_handle::{
@@ -16,11 +15,16 @@ use raw_window_handle::{
 ///
 /// # Safety
 ///
-/// The caller must ensure this value is not dropped while another thread is
-/// using a raw handle or lock derived from it. In practice this is guaranteed
-/// by wrapping it in `Arc<Mutex<SendSyncSdlWindow>>` — the `Arc` keeps the
-/// window alive and the `Mutex` serialises access.
+/// Callers must not drop the originating window while another thread holds a
+/// raw handle derived from it.
+#[derive(Deref, DerefMut)]
 pub struct SendSyncSdlWindow(pub sdl2::video::Window);
+
+impl Clone for SendSyncSdlWindow {
+    fn clone(&self) -> Self {
+        SendSyncSdlWindow(self.0.clone())
+    }
+}
 
 // SAFETY: see type-level doc above.
 unsafe impl Send for SendSyncSdlWindow {}
@@ -41,7 +45,7 @@ impl HasDisplayHandle for SendSyncSdlWindow {
 #[derive(Default)]
 pub struct SdlWindows {
     /// SDL windows keyed by SDL window ID.
-    pub windows: HashMap<u32, Arc<Mutex<SendSyncSdlWindow>>>,
+    pub windows: HashMap<u32, SendSyncSdlWindow>,
     /// Maps Bevy entity to SDL window ID.
     pub entity_to_sdl_window: EntityHashMap<u32>,
     /// Maps SDL window ID to Bevy entity.
@@ -61,7 +65,7 @@ impl SdlWindows {
     }
 
     /// Get the SDL window associated with a Bevy entity.
-    pub fn get_window(&self, entity: Entity) -> Option<&Arc<Mutex<SendSyncSdlWindow>>> {
+    pub fn get_window(&self, entity: Entity) -> Option<&SendSyncSdlWindow> {
         self.entity_to_sdl_window
             .get(&entity)
             .and_then(|id| self.windows.get(id))

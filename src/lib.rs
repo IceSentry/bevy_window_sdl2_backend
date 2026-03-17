@@ -20,7 +20,6 @@ use crossbeam_channel::Sender;
 use sdl_windows::SdlWindows;
 use window_event_handler::forward_bevy_window_events;
 
-use crate::sdl_windows::SendSyncSdlWindow;
 use crate::{
     cursor::set_cursor,
     sdl2_event_handler::{HandleEventState, handle_sdl_event},
@@ -101,10 +100,7 @@ fn get_display_refresh_rate(
         .filter_map(|e| {
             SDL_WINDOWS.with_borrow(|windows| {
                 let window = windows.get_window(e)?;
-                let Ok(window) = window.lock() else {
-                    return None;
-                };
-                let display_mode = window.0.display_mode().ok()?;
+                let display_mode = window.display_mode().ok()?;
                 Some(display_mode.refresh_rate)
             })
         })
@@ -241,13 +237,7 @@ fn changed_bevy_windows(
             else {
                 continue;
             };
-            let Ok(mut sdl_window) = sdl_window.lock() else {
-                bevy_log::error!("SDL window mutex poisoned for {entity}");
-                continue;
-            };
-            let sdl_window = &mut sdl_window.0;
 
-            // let sdl_window = &sdl_window.lock().unwrap().0;
             if window.title != cache.0.title {
                 if let Err(_) = sdl_window.set_title(&window.title) {
                     bevy_log::error!("Failed to set window title");
