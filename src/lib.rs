@@ -151,12 +151,7 @@ fn sdl_runner(mut app: App) -> AppExit {
             return AppExit::error();
         };
         let _event_watch = event.add_event_watch(|event| {
-            if let sdl2::event::Event::Window {
-                timestamp,
-                window_id,
-                win_event,
-            } = event
-            {
+            if let sdl2::event::Event::Window { win_event, .. } = event {
                 match win_event {
                     // SDL blocks the event pump on resize so we need to read these events from the
                     // event watch callback
@@ -179,7 +174,7 @@ fn sdl_runner(mut app: App) -> AppExit {
                 build_sdl_window(&video_subsystem, &window, &cursor_options, ready_sender);
             }
             for event in event_pump.poll_iter() {
-                sdl_event_sender.send(event);
+                let _ = sdl_event_sender.send(event);
             }
         }
     });
