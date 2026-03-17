@@ -1,4 +1,4 @@
-use crate::{sdl_windows::SendSyncSdlWindow, CachedWindow, SDL_WINDOWS};
+use crate::{CachedWindow, SDL_WINDOWS, sdl_windows::SendSyncSdlWindow};
 use bevy_ecs::{
     entity::Entity,
     message::MessageWriter,
@@ -19,7 +19,8 @@ pub fn build_sdl_window(
     cursor_options: &CursorOptions,
     ready_sender: Sender<WindowReady>,
 ) {
-    let mut window_builder = video_subsystem.window(&window.title, 1240, 720);
+    let mut window_builder =
+        video_subsystem.window(&window.title, window.width() as u32, window.height() as u32);
     if window.resizable {
         window_builder.resizable();
     }

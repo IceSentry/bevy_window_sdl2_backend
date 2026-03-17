@@ -3,6 +3,8 @@ use bevy::app::App;
 use bevy::app::PluginGroup;
 use bevy::prelude::*;
 use bevy::winit::WinitPlugin;
+use bevy_window::PresentMode;
+use bevy_window::WindowResolution;
 use bevy_window_sdl2_backend::Sdl2WindowBackendPlugin;
 
 fn main() -> AppExit {
@@ -11,7 +13,19 @@ fn main() -> AppExit {
             // Add the plugin
             Sdl2WindowBackendPlugin,
             // Make sure to disable the WinitPlugin
-            DefaultPlugins.build().disable::<WinitPlugin>(),
+            DefaultPlugins
+                .build()
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "SDL2 3d_scene".into(),
+                        present_mode: PresentMode::AutoVsync,
+                        resolution: WindowResolution::new(1920, 1080)
+                            .with_scale_factor_override(1.0),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                })
+                .disable::<WinitPlugin>(),
         ))
         .add_systems(Startup, setup)
         .add_systems(Update, rotate_cube)
