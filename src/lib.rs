@@ -33,7 +33,6 @@ mod sdl_windows;
 mod window_event_handler;
 
 thread_local! {
-    // TODO investigate if this is needed or if this can just be a bevy resource
     pub static SDL_WINDOWS: RefCell<SdlWindows> = const { RefCell::new(SdlWindows::new()) };
 }
 
