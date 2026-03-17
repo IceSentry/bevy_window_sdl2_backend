@@ -1,33 +1,26 @@
 #![allow(missing_docs, reason = "work in progress")]
 
 use core::cell::RefCell;
-use std::time::Duration;
 
-use bevy_app::{App, AppExit, Last, Plugin, PluginsState, Update};
-use bevy_ecs::system::NonSendMarker;
+use bevy_app::{PluginsState, prelude::*};
 use bevy_ecs::{
-    component::Component,
-    entity::Entity,
-    query::{Added, Changed, With},
-    resource::Resource,
-    system::{Query, ResMut, SystemState},
-    world::{FromWorld, Mut},
+    prelude::*,
+    system::{NonSendMarker, SystemState},
 };
 use bevy_math::UVec2;
-use bevy_window::Window;
-use create_windows::{CreateWindowParams, WindowReady, build_sdl_window, create_windows};
 use crossbeam_channel::Sender;
-use sdl_windows::SdlWindows;
-use window_event_handler::forward_bevy_window_events;
 
-use crate::{
-    cursor::set_cursor,
-    sdl2_event_handler::{HandleEventState, handle_sdl_event},
-};
+use crate::create_windows::{CreateWindowParams, WindowReady, build_sdl_window, create_windows};
+use crate::cursor::set_cursor;
+use crate::frame_limiter::{Sdl2FrameLimiter, Sdl2FrameLimiterPlugin};
+use crate::sdl_windows::SdlWindows;
+use crate::sdl2_event_handler::{HandleEventState, handle_sdl_event};
+use crate::window_event_handler::forward_bevy_window_events;
 
 mod converters;
 mod create_windows;
 mod cursor;
+pub mod frame_limiter;
 mod sdl2_event_handler;
 mod sdl_windows;
 mod window_event_handler;
@@ -40,77 +33,9 @@ pub struct Sdl2WindowBackendPlugin;
 impl Plugin for Sdl2WindowBackendPlugin {
     fn build(&self, app: &mut App) {
         app.set_runner(|app| sdl_runner(app))
+            .add_plugins(Sdl2FrameLimiterPlugin)
             .add_systems(Last, set_cursor)
             .add_systems(Last, changed_bevy_windows);
-
-        app.insert_resource(Sdl2FrameLimiter {
-            enabled: false,
-            render_target: std::time::Instant::now(),
-            target_framerate: None,
-            target_frame_time: None,
-            display_resfresh_rate: 0,
-        });
-
-        app.add_systems(Update, get_display_refresh_rate);
-    }
-}
-
-#[derive(Resource)]
-pub struct Sdl2FrameLimiter {
-    pub enabled: bool,
-    pub render_target: std::time::Instant,
-    pub target_framerate: Option<i32>,
-    pub target_frame_time: Option<std::time::Duration>,
-    pub display_resfresh_rate: i32,
-}
-
-impl Default for Sdl2FrameLimiter {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            render_target: std::time::Instant::now(),
-            target_framerate: None,
-            target_frame_time: None,
-            display_resfresh_rate: 0,
-        }
-    }
-}
-
-impl Sdl2FrameLimiter {
-    fn set_framerate(&mut self, target_framerate: i32) {
-        self.target_framerate = Some(target_framerate);
-        self.target_frame_time = Some(Duration::from_nanos(
-            1_000_000_000 / target_framerate as u64,
-        ));
-    }
-
-    fn set_display_refresh_rate(&mut self, display_resfresh_rate: i32) {
-        self.display_resfresh_rate = display_resfresh_rate;
-    }
-}
-
-fn get_display_refresh_rate(
-    mut limiter: ResMut<Sdl2FrameLimiter>,
-    windows: Query<Entity, With<Window>>,
-    _marker: NonSendMarker,
-) {
-    if let Some(refresh_rate) = windows
-        .iter()
-        .filter_map(|e| {
-            SDL_WINDOWS.with_borrow(|windows| {
-                let window = windows.get_window(e)?;
-                let display_mode = window.display_mode().ok()?;
-                Some(display_mode.refresh_rate)
-            })
-        })
-        // TODO not sure if min makes sense here. I think we should look for the window that is
-        // currently active and use the refresh_rate from that
-        .min()
-    {
-        limiter.set_framerate(refresh_rate);
-        limiter.set_display_refresh_rate(refresh_rate);
-    } else {
-        bevy_log::warn!("Failed to get display refresh rate");
     }
 }
 
@@ -217,18 +142,7 @@ fn sdl_runner(mut app: App) -> AppExit {
             break 'running;
         }
 
-        app.world_mut()
-            .resource_scope(|_world, mut limiter: Mut<Sdl2FrameLimiter>| {
-                if limiter.enabled {
-                    let now = std::time::Instant::now();
-                    if limiter.render_target <= now
-                        && let Some(target_frame_time) = limiter.target_frame_time
-                    {
-                        limiter.render_target = now + target_frame_time;
-                    }
-                    spin_sleep::sleep_until(limiter.render_target);
-                }
-            });
+        frame_limiter::framerate_limiter(&mut app);
     }
     app.world_mut().clear_all();
     AppExit::Success

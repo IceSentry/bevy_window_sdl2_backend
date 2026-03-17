@@ -1,6 +1,6 @@
 use bevy::{color::palettes, prelude::*, winit::WinitPlugin};
 use bevy_window::{CursorIcon, PresentMode, SystemCursorIcon, Window, WindowResolution};
-use bevy_window_sdl2_backend::{Sdl2FrameLimiter, Sdl2WindowBackendPlugin};
+use bevy_window_sdl2_backend::{Sdl2WindowBackendPlugin, frame_limiter::Sdl2FrameLimiter};
 
 fn main() {
     App::new()
