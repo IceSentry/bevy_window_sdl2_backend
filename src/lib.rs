@@ -1,7 +1,6 @@
 #![allow(missing_docs, reason = "work in progress")]
 
 use core::cell::RefCell;
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use bevy_app::{App, AppExit, Last, Plugin, PluginsState, Update};
@@ -11,13 +10,13 @@ use bevy_ecs::{
     entity::Entity,
     query::{Added, Changed, With},
     resource::Resource,
-    system::{Query, Res, ResMut, SystemState},
+    system::{Query, ResMut, SystemState},
     world::{FromWorld, Mut},
 };
 use bevy_math::UVec2;
 use bevy_window::Window;
-use create_windows::CreateWindowParams;
-use create_windows::create_windows;
+use create_windows::{CreateWindowParams, WindowReady, build_sdl_window, create_windows};
+use crossbeam_channel::Sender;
 use sdl_windows::SdlWindows;
 use window_event_handler::forward_bevy_window_events;
 
@@ -102,7 +101,7 @@ fn get_display_refresh_rate(
         .filter_map(|e| {
             SDL_WINDOWS.with_borrow(|windows| {
                 let window = windows.get_window(e)?;
-                let Ok(mut window) = window.lock() else {
+                let Ok(window) = window.lock() else {
                     return None;
                 };
                 let display_mode = window.0.display_mode().ok()?;
@@ -126,11 +125,18 @@ fn sdl_runner(mut app: App) -> AppExit {
         app.cleanup();
     }
     // Some events are only sent through the event watcher but don't reach the event pump
-    let (sender, receiver) = crossbeam_channel::unbounded();
-    let (create_window_sender, create_window_receiver) =
-        crossbeam_channel::unbounded::<(Entity, bevy_window::Window, bevy_window::CursorOptions)>();
-    let (sdl_window_ready_sender, sdl_window_ready_receiver) =
-        crossbeam_channel::unbounded::<(u32, Arc<Mutex<SendSyncSdlWindow>>)>();
+    let (event_watch_sender, event_watch_receiver) = crossbeam_channel::unbounded();
+
+    // When creating a window from bevy, we use a channel to send a message to the sdl thread to
+    // build the window. When the window is ready it gets back to the bevy thread
+    let (create_window_sender, create_window_receiver) = crossbeam_channel::unbounded::<(
+        Entity,
+        bevy_window::Window,
+        bevy_window::CursorOptions,
+        Sender<WindowReady>,
+    )>();
+
+    // SDL thread
     std::thread::spawn(move || {
         let sdl_context = sdl2::init().expect("failed to init sdl");
 
@@ -149,67 +155,16 @@ fn sdl_runner(mut app: App) -> AppExit {
             return AppExit::error();
         };
         let _event_watch = event.add_event_watch(|event| {
-            if let Err(err) = sender.send(event) {
+            if let Err(err) = event_watch_sender.send(event) {
                 bevy_log::error!("Failed to send sdl2 event to main loop.\n{err}");
             }
         });
 
         loop {
-            while let Ok((entity, window, cursor_options)) = create_window_receiver.try_recv() {
-                // TODO create window
-                let mut window_builder = video_subsystem.window(&window.title, 1240, 720);
-                if window.resizable {
-                    window_builder.resizable();
-                }
-                if !window.visible {
-                    window_builder.hidden();
-                }
-                if !window.decorations {
-                    window_builder.borderless();
-                }
-                match window.mode {
-                    bevy_window::WindowMode::Windowed => {}
-                    bevy_window::WindowMode::BorderlessFullscreen(..) => {
-                        window_builder.borderless();
-                        window_builder.fullscreen_desktop();
-                    }
-                    bevy_window::WindowMode::Fullscreen(..) => {
-                        window_builder.fullscreen();
-                    }
-                }
-
-                #[cfg(target_os = "macos")]
-                window_builder.metal_view();
-
-                let mut sdl_window = window_builder
-                    .build()
-                    .map_err(|e| e.to_string())
-                    .expect("failed to build window");
-                if window.transparent {
-                    sdl_window
-                        .set_opacity(0.5)
-                        .expect("Failed to set window opacity");
-                }
-                match cursor_options.grab_mode {
-                    bevy_window::CursorGrabMode::None => sdl_window.set_mouse_grab(false),
-                    bevy_window::CursorGrabMode::Confined | bevy_window::CursorGrabMode::Locked => {
-                        sdl_window.set_mouse_grab(true);
-                    }
-                }
-
-                let sdl_window_id = sdl_window.id();
-                let arc = Arc::new(Mutex::new(SendSyncSdlWindow(sdl_window)));
-
-                // SDL_WINDOWS.with_borrow_mut(|windows| {
-                //     bevy_log::info!("inserting {entity} {sdl_window_id} into SDL_WINDOWS");
-                //     windows.windows.insert(sdl_window_id, Arc::clone(&arc));
-                //     windows.entity_to_sdl_window.insert(entity, sdl_window_id);
-                //     windows.sdl_window_to_entity.insert(sdl_window_id, entity);
-                //     println!("{:?}", windows.entity_to_sdl_window);
-                // });
-
-                // TODO send entity to make sure it matches
-                let _ = sdl_window_ready_sender.send((sdl_window_id, arc));
+            while let Ok((_entity, window, cursor_options, ready_sender)) =
+                create_window_receiver.try_recv()
+            {
+                build_sdl_window(&video_subsystem, &window, &cursor_options, ready_sender);
             }
             event_pump.pump_events();
         }
@@ -225,7 +180,6 @@ fn sdl_runner(mut app: App) -> AppExit {
         create_windows(
             create_window.get_mut(app.world_mut()),
             &create_window_sender,
-            &sdl_window_ready_receiver,
         );
         create_window.apply(app.world_mut());
         app.world_mut()
@@ -238,7 +192,7 @@ fn sdl_runner(mut app: App) -> AppExit {
                 }
             });
 
-        while let Ok(event) = receiver.try_recv() {
+        while let Ok(event) = event_watch_receiver.try_recv() {
             match handle_sdl_event(&mut app, event, &mut bevy_window_events) {
                 HandleEventState::Exit => break 'running,
                 HandleEventState::Continue => {}
