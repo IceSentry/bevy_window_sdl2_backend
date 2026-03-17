@@ -13,7 +13,7 @@ use bevy_ecs::{
     world::{FromWorld, Mut},
 };
 use bevy_math::UVec2;
-use bevy_window::{CursorIcon, Window};
+use bevy_window::Window;
 use create_windows::CreateWindowParams;
 use create_windows::create_windows;
 use sdl_windows::SdlWindows;
@@ -21,9 +21,14 @@ use sdl2::Sdl;
 use window_event_handler::forward_bevy_window_events;
 
 use crate::sdl2_event_handler::{HandleEventState, handle_sdl_event};
+use crate::{
+    cursor::set_cursor,
+    sdl2_event_handler::{HandleEventState, handle_sdl_event},
+};
 
 mod converters;
 mod create_windows;
+mod cursor;
 mod sdl2_event_handler;
 mod sdl_windows;
 mod window_event_handler;
