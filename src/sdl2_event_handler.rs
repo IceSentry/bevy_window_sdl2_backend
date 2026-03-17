@@ -27,16 +27,15 @@ pub(crate) fn handle_sdl_event(
             ..
         } => {
             SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                let mut window_event_state =
-                    SystemState::<HandleSdlWindowEventParams>::from_world(app.world_mut());
-                handle_sdl_window_event(
-                    window_event_state.get_mut(app.world_mut()),
-                    entity,
-                    win_event,
-                );
+                if let Some(entity) = windows.get_window_entity(window_id) {
+                    let mut window_event_state =
+                        SystemState::<HandleSdlWindowEventParams>::from_world(app.world_mut());
+                    handle_sdl_window_event(
+                        window_event_state.get_mut(app.world_mut()),
+                        entity,
+                        win_event,
+                    );
+                }
             });
         }
         Event::KeyDown {
@@ -155,13 +154,12 @@ pub(crate) fn handle_sdl_event(
                 },
             ));
             SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                let mut win = app
-                    .world_mut()
-                    .get_mut::<bevy_window::Window>(entity)
-                    .expect("Failed to get window");
+                let Some(entity) = windows.get_window_entity(window_id) else {
+                    return;
+                };
+                let Some(mut win) = app.world_mut().get_mut::<bevy_window::Window>(entity) else {
+                    return;
+                };
                 let physical_position = DVec2::new(x as f64, y as f64);
 
                 let last_position = win.physical_cursor_position();

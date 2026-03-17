@@ -34,8 +34,11 @@ pub fn handle_sdl_window_event(
     use sdl2::event::WindowEvent as SdlWindowEvent;
     let (mut window, _) = query.get_mut(entity).expect("failed to get Window");
     match win_event {
-        SdlWindowEvent::Resized(width, height) | SdlWindowEvent::SizeChanged(width, height) => {
-            // WARN SDL sends these events twice for some reason, not sure if that's a problem
+        SdlWindowEvent::Exposed | SdlWindowEvent::Resized(_, _) => {
+            // repaint here
+        }
+        // SdlWindowEvent::Resized(width, height) |
+        SdlWindowEvent::SizeChanged(width, height) => {
             window
                 .resolution
                 .set_physical_resolution(width as u32, height as u32);
@@ -100,8 +103,8 @@ pub fn handle_sdl_window_event(
 
 pub fn forward_bevy_window_events(world: &mut World, events: Vec<bevy_window::WindowEvent>) {
     use bevy_window::WindowEvent as BevyWindowEvent;
-    for sdl_event in events.iter() {
-        match sdl_event.clone() {
+    for bevy_window_event in events.iter() {
+        match bevy_window_event.clone() {
             BevyWindowEvent::AppLifecycle(e) => {
                 world.write_message(e);
             }
