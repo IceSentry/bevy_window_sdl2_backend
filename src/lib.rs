@@ -10,12 +10,15 @@ use bevy_ecs::{
 use bevy_math::UVec2;
 use crossbeam_channel::Sender;
 
-use crate::create_windows::{CreateWindowParams, WindowReady, build_sdl_window, create_windows};
 use crate::cursor::set_cursor;
 use crate::frame_limiter::{Sdl2FrameLimiter, Sdl2FrameLimiterPlugin};
 use crate::sdl_windows::SdlWindows;
 use crate::sdl2_event_handler::{HandleEventState, handle_sdl_event};
 use crate::window_event_handler::forward_bevy_window_events;
+use crate::{
+    create_windows::{CreateWindowParams, WindowReady, build_sdl_window, create_windows},
+    frame_limiter::update_framerate_target,
+};
 
 mod converters;
 mod create_windows;
@@ -106,6 +109,9 @@ fn sdl_runner(mut app: App) -> AppExit {
 
     let mut bevy_window_events: Vec<bevy_window::WindowEvent> = vec![];
     'running: loop {
+        // This needs to happen as soon as possible in the frame
+        update_framerate_target(&mut app);
+
         // Process new windows before checking sdl events
         let mut create_window =
             SystemState::<CreateWindowParams<Added<bevy_window::Window>>>::from_world(
@@ -116,15 +122,6 @@ fn sdl_runner(mut app: App) -> AppExit {
             &create_window_sender,
         );
         create_window.apply(app.world_mut());
-        app.world_mut()
-            .resource_scope(|_world, mut limiter: Mut<Sdl2FrameLimiter>| {
-                if limiter.enabled
-                    && limiter.render_target <= std::time::Instant::now()
-                    && let Some(target_frame_time) = limiter.target_frame_time
-                {
-                    limiter.render_target += target_frame_time;
-                }
-            });
 
         while let Ok(event) = sdl_event_receiver.try_recv() {
             match handle_sdl_event(&mut app, event, &mut bevy_window_events) {
@@ -142,6 +139,7 @@ fn sdl_runner(mut app: App) -> AppExit {
             break 'running;
         }
 
+        // This should probably be in the render world
         frame_limiter::framerate_limiter(&mut app);
     }
     app.world_mut().clear_all();

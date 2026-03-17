@@ -80,6 +80,18 @@ fn get_display_refresh_rate(
     }
 }
 
+pub(crate) fn update_framerate_target(app: &mut App) {
+    app.world_mut()
+        .resource_scope(|_world, mut limiter: Mut<Sdl2FrameLimiter>| {
+            if limiter.enabled
+                && limiter.render_target <= std::time::Instant::now()
+                && let Some(target_frame_time) = limiter.target_frame_time
+            {
+                limiter.render_target += target_frame_time;
+            }
+        });
+}
+
 pub(crate) fn framerate_limiter(app: &mut App) {
     app.world_mut()
         .resource_scope(|_world, mut limiter: Mut<Sdl2FrameLimiter>| {
